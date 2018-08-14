@@ -618,71 +618,63 @@ case $1 in
   --help|-h|help)
     set +x
     cat <<EOD
-Magic Charging Switch (mcs)
+Magic Charging Switch (mcs)汉化版
 
-Advanced battery charging controller
+先进的电池充电控制器
 
-
-Usage:
-
+语法:
 mcs [-b] [-h] [-i] [-r] [-v] [debug] [-k %LEVEL] [%PAUSE %RESUME] [%PAUSE] [-m/t %PAUSE %RESUME] [-s start/stop] [-d/e %/TIMEOUT] [-x /path/to/switch onValue offValue]
 
--b --> reset battery stats on demand (does not work on all devices)
+-b --> 重置电池统计数据(不一定能在所有设备上工作)
 
--i --> display config and debugging & power info
+-i --> 显示电池信息
 
--r --> reset settings
+-r --> 重置设置
 
--s --> pause/resume, start/stop daemon
+-s --> 暂停/恢复, --开始/停止服务
 
--v --> toggle extensive (loops) verbose
+-v --> 切换广泛（循环）详细资料
 
--x --> pick a charging switch from the database
+-x --> 从数据库中选择一个充电开关
 
-debug --> gather debugging data & save it to $logsDir/mcs_debug_log-\$device-\$csVER-\$date.txt
+debug --> 收集调试数据并保存到 /sdcard/mcs_debug-\$DEVICE-\$csVER-\$DATE.log
 
--k %LEVEL --> keep/maintain battery power at a constant %LEVEL (pauses mcs daemon)
+-k %LEVEL --> 保持/保持电池电量在恒定水平（暂停MCS服务）
 
-[no args] --> run with default/previous settings
+[no args] --> 使用默认/上一个设置运行MCS
 
--h/--help/help --> help
+-h/--help/help --> 使用说明
 
-%PAUSE %RESUME --> pause charging at %PAUSE value (default 90); resume if battery drops below %RESUME (default 80). This is the INITIAL SETUP COMMAND. If auto-run is OFF, the command works as is; else, new settings are saved and automatically picked up by mcs daemon.
+%PAUSE %RESUME --> 当达到%PAUSE值(默认90)时暂停充电; 如果电量下降到%RESUME(默认80)，则恢复。 这是初始设置命令。 如果自动运行关闭，该命令正常工作; 否则，新的设置被保存并自动启动MCS服务
 
--m/-t %PAUSE %RESUME --> generate automation config (-m for MacroDroid; -t for Tasker -- pick one)
+-m/-t %PAUSE %RESUME --> 生成自动化配置 (-m:MacroDroid配置; -t:Tasker配置 -- 选择一个)
 
--d/e [%/TIMEOUT (optional)] --> disable/enable charging on demand (pauses mcs daemon)
+-d/e [%/TIMEOUT (可选)] --> 按需暂停/启用充电(暂停MCS服务)
 
--x /path/to/switch onValue offValue -- > manually set a charging switch; if values match one of the following groups, as is or in reverse order -- you don't have to specify them: 1/0, enable/disable, enabled/disabled, true/false, on/off, 100/3, Charging/Discharging
+-x /path/to/switch ON_key OFF_key -- > 手动设置充电开关;如果键按原样或反向匹配以下其中一项 - 您不必指定它们: 1/0, enable/disable, enabled/disabled, true/false, on/off, 100/3
 
+使用示例/提示:
 
-Usage Examples/Tips
+mcs -d 马上停止充电
+mcs -e 马上开始充电
+mcs -d/-e 1/1m/1h 1秒/1分钟/1小时后 断开/开始充电
+mcs -d/-e 50% 电量到 50% 时断开/开始充电
+mcs -s --enable/--disable 启动控制/关闭控制
+mcs 85 充到 85% 后断电，如果数据线不拔插掉电到 80%(默认值) 又开始充电
+mcs 85 20 充到 85% 后断电，如果数据线不拔插掉电到 20% 又开始充电
 
-"mcs 90" --> pause charging at 90%; resume when battery level is less or equal to 80% (default).
+高级示例:
+mcs -e 120 && mcs -d 30m && mcs -e 1h
+充两分钟电，断开半小时，又开始充电一小时后断电
+mcs -e 30m && mcs -d 30m && mcs -e 90%
+充半小时，然后断开半小时后一直充电到 90%
+mcs -e 50% && mcs -d 5h && mcs -e 80% && mcs -d 30m && mcs -e 90%
+充电到 50% 然后断电 5 小时，然后充到 80%，断开半小时，又充到 90%（闲的d疼）
 
-"mcs 80 20" --> pause charging at 80%; resume when battery level is less or equal to 20%.
-
-"mcs -d" --> disable charging.
-
-"mcs -d" --> enable charging.
-
-"mcs -d 30m" --> keep charging disabled for 30 minutes.
-
-"mcs -e 1h" --> keep charging enabled for 1 hour.
-
-"mcs -e 80%" --> Charge until battery level equals 80%.
-
-"mcs -d 40%" --> Charge until battery level equals 40%.
-
-"mcs -e 120 && mcs -d 30m && mcs -e 1h" --> charge for 120 seconds, pause for 30 minutes, then charge again for 1h.
-
-"mcs -e 30m && mcs -d 30m && mcs -e 90%" --> charge for 30 minutes, pause for 30 minutes, then charge again, but this time until battery level is greater or equal to 90%.
-
-"mcs -e 50% && mcs -d 5h && mcs -e 80% && mcs -d 30m && mcs -e 90%" --> charge until 50%, pause for 5 hours, charge until 80%, pause for 30 minutes, charge until 90%.
-
-Ideally, you want your battery level between 40-60% - best, 20-80% - average, 10-90% - fair.
-
-For best convenience, stick with mcs 90 80; mcs 80 70 for a perfect balance between convenience & battery wear. If you want the longest battery lifespan, use mcs 42 41 or mcs -k 42 (best for prolonged usage -- i.e., navigation).
+建议:
+理想情况下，保持在在40%-60%之间，寿命最长，20%-80%较为平均，10%-90%-合理
+为方便起见，请使用 mcs 90 80 或 mcs 80 70，又方便又完美达到平衡。
+如果您希望最长的电池寿命，使用mcs 42 41或mcs -k 42(最适合长期使用 -- i.e., navigation).
 EOD
   echo
   ;;
