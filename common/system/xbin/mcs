@@ -417,7 +417,7 @@ case $1 in
     done
 
     if [[ ! -f $(uevent) ]]; then
-      echo -e "(!) Unsupported device\n"
+      echo -e "(!) 不支持的设备\n"
       debug
     fi
 
@@ -435,10 +435,10 @@ case $1 in
       count=0
 
       if ! charging; then
-        echo "-- Waiting for charger..."
+        echo "-- 等待连接充电器..."
         until charging; do sleep 5; done
-        echo "--- Charger detected"
-        echo "-- Please wait..."
+        echo "--- 检测到充电器"
+        echo "-- 请等候..."
       fi
 
       echo
@@ -480,21 +480,21 @@ case $1 in
       set_prop autoRun false
       set_prop pauseDaemon false
       rm $modData/.daemon 2>/dev/null
-      echo "(i) ${modID} daemon stopped."
+      echo "(i) ${modID} 守护程序已停止."
     elif [ "$2" = "start" ]; then
       set_prop autoRun true
       set_prop pauseDaemon false
       (${modID} daemon) &
-      echo "(i) ${modID} daemon started."
+      echo "(i) ${modID} 守护程序启动."
       echo "- You may close this window."
     else
       if $(pause_daemon); then
         set_prop pauseDaemon false
         Switch ON
-        echo "(i) ${modID} daemon resumed."
+        echo "(i) ${modID} 守护程序已恢复."
       else
         set_prop pauseDaemon true
-        echo "(i) ${modID} daemon paused."
+        echo "(i) ${modID} 守护程序已暂停."
       fi
     fi
     echo
@@ -506,10 +506,10 @@ case $1 in
     -v)
     if $(get_prop loopVerbose); then
       set_prop loopVerbose false
-      echo -e "(i) Loop verbose disabled"
+      echo -e "(i) Loop verbose 禁用"
     else
       set_prop loopVerbose true
-      echo -e "(i) Loop verbose enabled"
+      echo -e "(i) Loop verbose 启用"
     fi
     echo
     ;;
@@ -522,7 +522,7 @@ case $1 in
     if $(auto_run) && ! $(pause_daemon) && [ -f $modData/.daemon ]; then
       set_prop pauseDaemon true
       echo "(i) ${modID} daemon paused."
-      echo -e "- Reboot or run \"${modID} -s\" to resume.\n"
+      echo -e "- 重启或运行代码 \"${modID} -s\" 以恢复.\n"
     fi
 
     echo "Maintaining $2%..."
@@ -558,8 +558,8 @@ case $1 in
   # reset settings
   -r)
     cp $defaultConfig $config \
-      && echo -e "(i) Settings reset successfully.\n" \
-      || { echo -e "(!) Settings reset failed.\n"; exit 1; }
+      && echo -e "(i) 设置重置成功.\n" \
+      || { echo -e "(!) 设置重置失败.\n"; exit 1; }
     ;;
 
 
@@ -584,7 +584,7 @@ case $1 in
       exit 0
     fi
 
-    echo "(i) ${modID} daemon started."
+    echo "(i) ${modID} 守护程序启动."
     echo -e "- You may close this window.\n"
     $(get_prop loopVerbose) || set +x
 
@@ -669,7 +669,7 @@ mcs -e 120 && mcs -d 30m && mcs -e 1h
 mcs -e 30m && mcs -d 30m && mcs -e 90%
 充半小时，然后断开半小时后一直充电到 90%
 mcs -e 50% && mcs -d 5h && mcs -e 80% && mcs -d 30m && mcs -e 90%
-充电到 50% 然后断电 5 小时，然后充到 80%，断开半小时，又充到 90%（闲的d疼）
+充电到 50% 然后断电 5 小时，然后充到 80%，断开半小时，又充到 90%
 
 建议:
 理想情况下，保持在在40%-60%之间，寿命最长，20%-80%较为平均，10%-90%-合理
@@ -685,7 +685,7 @@ EOD
   -d)
     if $(auto_run) && ! $(pause_daemon) && [ -f $modData/.daemon ]; then
       set_prop pauseDaemon true
-      echo -e "(i) ${modID} daemon paused.\n"
+      echo -e "(i) ${modID} 已暂停.\n"
     fi
 
     if [ -n "$2" ]; then
@@ -696,7 +696,7 @@ EOD
     else OFF_time; fi
 
     if $(auto_run) && $(pause_daemon); then
-      echo -e "(i) Reboot or run \"${modID} -s\" to resume ${modID} daemon.\n"
+      echo -e "(i) 重启或运行代码 \"${modID} -s\" 以恢复 ${modID} 守护程序.\n"
     fi
     ;;
 
@@ -706,7 +706,7 @@ EOD
   -e)
     if $(auto_run) && ! $(pause_daemon) && [ -f $modData/.daemon ]; then
       set_prop pauseDaemon true
-      echo "(i) ${modID} daemon paused.\n"
+      echo "(i) ${modID} 守护程序已暂停.\n"
     fi
 
     invertOff=true
@@ -718,7 +718,7 @@ EOD
     else OFF_time; fi
 
     if $(auto_run) && $(pause_daemon); then
-      echo -e "(i) Reboot or run \"${modID} -s\" to resume ${modID} daemon.\n"
+      echo -e "(i) 重启或运行代码 \"${modID} -s\" 以恢复 ${modID} 守护程序.\n"
     fi
     ;;
 
@@ -740,7 +740,7 @@ EOD
   # or apply default charging limits (higherLimit=90 lowerLimit=80)
   "")
     if $(auto_run) && ! $(pause_daemon) && [ -f $modData/.daemon ]; then
-      echo -e "(i) ${modID} daemon is already running.\n"
+      echo -e "(i) ${modID} 守护进程已经在运行.\n"
       exit 0
     fi
 
@@ -752,7 +752,7 @@ EOD
   -m|-t)
     case $1 in
       -m)
-        echo "(i) Generating /sdcard/MacroDroid/${modID}.category..."
+        echo "(i) 配置文件生成 /sdcard/MacroDroid/${modID}.category..."
         mDir=/sdcard/MacroDroid
         [[ -d $mDir ]] || mkdir $mDir
         cp $modPath/config/macrodroid $mDir/${modID}.category
@@ -761,7 +761,7 @@ EOD
         ;;
 
       -t)
-        echo "(i) Generating /sdcard/Tasker/projects/${modID}.prj.xml..."
+        echo "(i) 配置文件生成 /sdcard/Tasker/projects/${modID}.prj.xml..."
         tDir=/sdcard/Tasker/projects
         [[ -d $tDir ]] || mkdir -p $tDir
         cp $modPath/config/tasker $tDir/${modID}.prj.xml
@@ -775,7 +775,7 @@ EOD
       *) exit1;;
     esac
 
-    echo -e "- End\n"
+    echo -e "- 结束\n"
     ;;
 
 
@@ -784,12 +784,12 @@ EOD
   # $2=lowerLimit (i.e., 80)
   [0-9]*)
     update_cfg $1 $2
-    echo "(i) New settings saved."
+    echo "(i) 已保存新的设置"
     sleep 1
 
     if $(auto_run) && ! $(pause_daemon) && [ -f $modData/.daemon ]; then
-      echo "- ${modID} daemon is already running."
-      echo -e "-- Now working with the new values.\n"
+      echo "- ${modID} 守护进程已经在运行."
+      echo -e "-- 以新的设置工作中\n"
       Switch ON
       exit 0
     fi
