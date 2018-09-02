@@ -63,7 +63,7 @@ device="$(getprop ro.product.brand)_$model"
 
 debug() {
   set +x
-  echo "(i) Gathering debugging data..."
+  echo "(i) 收集调试数据中..."
   rm $logsDir/${modID}_debug*txt 2>/dev/null
   rm /sdcard/${modID}_debug*txt 2>/dev/null
 
@@ -146,7 +146,7 @@ c_loop() {
 
 
 check_compatibility() {
-  echo "(i) Checking compatibility..."
+  echo "(i) 检查兼容性中..."
 
   # preparation
   generate_sys_cache null_value
@@ -170,8 +170,8 @@ check_compatibility() {
       $(get_prop loopVerbose) || set +x
       until charging; do sleep 5; done
       $(get_prop loopVerbose) || set -x 2>>$newLog
-      echo "-- Charger detected"
-      echo "- Please wait..."
+      echo "-- 检测到充电器"
+      echo "- 请稍候..."
     fi
 
     for ctrlFile in $(grep -Ev '#|^$' $modPath/config/switches); do
@@ -201,10 +201,10 @@ check_compatibility() {
 
   # verdict
   if [[ ! -f $(Switch) ]]; then
-    echo -e "- (!) Incompatible device.\n-- Your kernel may not support advanced charging control.\n"
+    echo -e "- (!) 不支持的设备.\n-- 您的内核可能不支持高级充电控制.\n"
     debug
   else
-    echo -e "- Congratulations, your device is supported!\n"
+    echo -e "- 恭喜，您的设备受支持!\n"
     rm $modData/sys_cache
     sleep 2
   fi
@@ -212,8 +212,8 @@ check_compatibility() {
 
 
 exit1() {
-  echo "(!) $*: Invalid option(s)/argument(s)"
-  echo -e "- Run \"${modID} -h\" for help\n"
+  echo "(!) $*: 无效的选项/参数"
+  echo -e "- 输入并运行 \"${modID} -h\" 以获取帮助\n"
   exit 1
 }
 
@@ -291,18 +291,18 @@ OFF_time() {
 
     if $invertOff; then
       Switch OFF
-      echo "- Charging disabled."
+      echo "- 充电禁用"
     else
       Switch ON
-      echo "- Charging re-enabled"
+      echo "- 充电重新启用"
     fi
     end_time
 
   else
     if $invertOff; then
-      echo "(i) Charging enabled."
+      echo "(i) 充电启用"
     else
-      echo "(i) Charging disabled."
+      echo "(i) 充电禁用"
     fi
   fi
   echo
@@ -327,10 +327,10 @@ OFF_percent() {
 
   if $invertOff; then
     Switch OFF
-    echo "- Charging disabled."
+    echo "- 充电禁用"
   else
     Switch ON
-    echo "- Charging re-enabled"
+    echo "- 充电重新启用"
   fi
   end_time
   echo
@@ -406,7 +406,7 @@ case $1 in
 
   # manually set a charging switch
   -x)
-    echo "(i) Please wait..."
+    echo "(i) 请稍候..."
     generate_sys_cache null_value
     for ueventFile in $(grep -i 'battery/uevent' $modData/sys_cache); do
       chmod +r "$ueventFile"
@@ -427,10 +427,10 @@ case $1 in
         set_prop onKey $3
         set_prop offKey $4
       fi
-      echo -e "- Charging switch set successfully.\n"
+      echo -e "- 充电开关设置成功.\n"
 
     else
-      echo "- Fetching known control files for ${device}..."
+      echo "- 从 ${device} 获取已知的控制文件..."
       : >$modData/.${modID}x
       count=0
 
@@ -459,10 +459,10 @@ case $1 in
         read Input
         if [ -n "$Input" ]; then
           set_switch "$(grep "\[${Input}\] " $modData/.${modID}x | awk '{print $2}')"
-          echo -e "\n(i) New switch set successfully.\n"
+          echo -e "\n(i) 新开关设置成功.\n"
         fi
       else
-        echo -e "\n(i) No additional switch(es) found\n"
+        echo -e "\n(i) 没有找到其他(额外)的开关\n"
       fi
 
     fi
@@ -525,8 +525,8 @@ case $1 in
       echo -e "- 重启或运行代码 \"${modID} -s\" 以恢复.\n"
     fi
 
-    echo "Maintaining $2%..."
-    echo "(i) Press CTRL (Vol. Down) + C to abort."
+    echo "维护 $2% 中..."
+    echo "(i) 按 CTRL (音量下) + C 以中止"
     Switch ON
 
     while :; do
@@ -585,7 +585,7 @@ case $1 in
     fi
 
     echo "(i) ${modID} 守护程序启动."
-    echo -e "- You may close this window.\n"
+    echo -e "- 您可以关闭此窗口.\n"
     $(get_prop loopVerbose) || set +x
 
     # remove lock file on exit/interrupt
@@ -627,45 +627,44 @@ mcs [-b] [-h] [-i] [-r] [-v] [debug] [-k %LEVEL] [%PAUSE %RESUME] [%PAUSE] [-m/t
 
 -b --> 重置电池统计数据(不一定能在所有设备上工作)
 
--i --> 显示电池信息
+-i --> 显示配置和调试和电源信息
 
 -r --> 重置设置
 
--s --> 暂停/恢复, --开始/停止服务
+-s --> 暂停/恢复, 开始/停止守护进程
 
 -v --> 切换广泛（循环）详细资料
 
 -x --> 从数据库中选择一个充电开关
 
-debug --> 收集调试数据并保存到 /sdcard/mcs_debug-\$DEVICE-\$csVER-\$DATE.log
+debug --> 收集调试数据并保存到 $logsDir/mcs_debug_log-\$device-\$csVER-\$DATE.txt
 
--k %LEVEL --> 保持/保持电池电量在恒定水平（暂停MCS服务）
+-k %LEVEL --> 保持/维持电池电量恒定在 %LEVEL（暂停MCS服务）
 
 [no args] --> 使用默认/上一个设置运行MCS
 
 -h/--help/help --> 使用说明
 
-%PAUSE %RESUME --> 当达到%PAUSE值(默认90)时暂停充电; 如果电量下降到%RESUME(默认80)，则恢复。 这是初始设置命令。 如果自动运行关闭，该命令正常工作; 否则，新的设置被保存并自动启动MCS服务
+%PAUSE %RESUME --> 当达到%PAUSE值(默认90)时暂停充电; 如果电量下降到%RESUME(默认80)则恢复。 这是初始设置命令。如果自动运行为关闭，则命令按原样运行;否则，新设置将被mcs守护程序保存并自动获取
 
--m/-t %PAUSE %RESUME --> 生成自动化配置 (-m:MacroDroid配置; -t:Tasker配置 -- 选择一个)
+-m/-t %PAUSE %RESUME --> 生成自动化配置文件 (-m:MacroDroid配置; -t:Tasker配置 -- 选择一个)
 
 -d/e [%/TIMEOUT (可选)] --> 按需暂停/启用充电(暂停MCS服务)
 
--x /path/to/switch ON_key OFF_key -- > 手动设置充电开关;如果键按原样或反向匹配以下其中一项 - 您不必指定它们: 1/0, enable/disable, enabled/disabled, true/false, on/off, 100/3
+-x /path/to/switch ON_key OFF_key -- > 手动设置充电开关;如果值与以下组之一匹配，则按原样或按相反顺序匹配 - 您不必指定它们: 1/0, enable/disable, enabled/disabled, true/false, on/off, 100/3, Charging/Discharging
 
 使用示例/提示:
 
+mcs 90 充到 90% 后断电，如果数据线不拔插掉电到 80%(默认值) 又开始充电
+mcs 80 20 充到 80% 后断电，如果数据线不拔插掉电到 20% 又开始充电
 mcs -d 马上停止充电
 mcs -e 马上开始充电
 mcs -d/-e 1/1m/1h 1秒/1分钟/1小时后 断开/开始充电
 mcs -d/-e 50% 电量到 50% 时断开/开始充电
-mcs -s --enable/--disable 启动控制/关闭控制
-mcs 85 充到 85% 后断电，如果数据线不拔插掉电到 80%(默认值) 又开始充电
-mcs 85 20 充到 85% 后断电，如果数据线不拔插掉电到 20% 又开始充电
+mcs -s 启动控制/关闭控制
 
-高级示例:
 mcs -e 120 && mcs -d 30m && mcs -e 1h
-充两分钟电，断开半小时，又开始充电一小时后断电
+充两分钟电(120s)，断开半小时，又开始充电一小时后断电
 mcs -e 30m && mcs -d 30m && mcs -e 90%
 充半小时，然后断开半小时后一直充电到 90%
 mcs -e 50% && mcs -d 5h && mcs -e 80% && mcs -d 30m && mcs -e 90%
