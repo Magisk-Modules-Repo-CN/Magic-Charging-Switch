@@ -46,7 +46,7 @@ echo
 modPath=/sbin/.core/img/$modID
 [[ -f $modPath/module.prop ]] || modPath=/magisk/$modID
 [[ -f $modPath/module.prop ]] || \
-  { echo -e "(!) modPath not found\n"; exit 1; }
+  { echo -e "(!) 找不到 modPath\n"; exit 1; }
 defaultConfig=$modPath/config/${modID}
 modVersion="$(get_prop versionCode $modPath/module.prop)"
 
@@ -71,7 +71,7 @@ debug() {
   exec >$logsDir/${modID}_debug_log-${device}-${modVersion}-$(date +%Y%m%d%H%M%S).txt
   echo -e "$(date)\n${modID}Version=$modVersion\n\n\n"
 
-  echo -e "### PROPS ###\n"
+  echo -e "### PROPS(道具) ###\n"
   getprop | grep -Ei 'product|version'
   echo -e "\n\n"
 
@@ -103,8 +103,8 @@ debug() {
   exec 1>&3 3>&-
 
   cp -f $logsDir/${modID}_debug*txt /sdcard/
-  echo -e "\n-- Generated file: $( ls /sdcard/${modID}_debug*txt)\n"
-  echo -e "-- Support thread: https://forum.xda-developers.com/apps/magisk/module-magic-charging-switch-cs-v2017-9-t3668427\n"
+  echo -e "\n-- 生成的文件: $( ls /sdcard/${modID}_debug*txt)\n"
+  echo -e "-- 在线支持: https://forum.xda-developers.com/apps/magisk/module-magic-charging-switch-cs-v2017-9-t3668427\n"
   rm $modData/sys_cache
 }
 
@@ -118,22 +118,22 @@ c_loop() {
     until [ "$(batt_level)" -ge "$1" ]; do
       clear
       echo "Charging until $1%..."
-      echo "Current battery level: $(batt_level)%"
+      echo "当前电池电量: $(batt_level)%"
       echo -e "$startTime\n"
-      echo "(i) Press CTRL (Vol. Down) + C to abort."
+      echo "(i) 按 CTRL (Vol. Down) + C 以中止."
       sleep 12
     done
 
     Switch OFF
-    echo -e "\n(i) Desired charge % reached."
+    echo -e "\n(i) 已达到期望的 % ."
     end_time
 
     # Reset battery stats
     dumpsys batterystats --reset &>/dev/null
 
-    echo -e "- Charging paused.\n"
-    echo "(i) Waiting until $(lower_limit)% to restart the cycle..."
-    echo "- Press CTRL (Vol. Down) + C to abort."
+    echo -e "- 充电暂停.\n"
+    echo "(i) 等待达到 $(lower_limit)% 后重启循环..."
+    echo "- 按 CTRL (Vol. Down) + C 以中止."
 
     until [ "$(batt_level)" -le "$(lower_limit)" ]; do
       sleep 12
@@ -166,7 +166,7 @@ check_compatibility() {
   if [[ -f $(uevent) ]]; then
 
     if ! charging; then
-      echo "- Waiting for charger..."
+      echo "- 等待连接充电器..."
       $(get_prop loopVerbose) || set +x
       until charging; do sleep 5; done
       $(get_prop loopVerbose) || set -x 2>>$newLog
@@ -287,7 +287,7 @@ OFF_time() {
       start_time
       sleep $1
     fi
-    echo -e "\n(i) Timeout reached."
+    echo -e "\n(i) 时间到了."
 
     if $invertOff; then
       Switch OFF
@@ -323,7 +323,7 @@ OFF_percent() {
   until [ "$(batt_level)" -ge "$(echo $1 | sed 's/%//')" ]; do
     sleep 12
   done
-  echo "(i) Desired % reached."
+  echo "(i) 达到期望的 % ."
 
   if $invertOff; then
     Switch OFF
@@ -455,7 +455,7 @@ case $1 in
 
       if grep -q '[a-z]' $modData/.${modID}x; then
         cat $modData/.${modID}x
-        echo "(i) Pick a number..."
+        echo "(i) 选一个号码..."
         read Input
         if [ -n "$Input" ]; then
           set_switch "$(grep "\[${Input}\] " $modData/.${modID}x | awk '{print $2}')"
@@ -521,12 +521,12 @@ case $1 in
     $(get_prop loopVerbose) || set +x
     if $(auto_run) && ! $(pause_daemon) && [ -f $modData/.daemon ]; then
       set_prop pauseDaemon true
-      echo "(i) ${modID} daemon paused."
+      echo "(i) ${modID} 守护进程已暂停."
       echo -e "- 重启或运行代码 \"${modID} -s\" 以恢复.\n"
     fi
 
     echo "维护 $2% 中..."
-    echo "(i) 按 CTRL (音量下) + C 以中止"
+    echo "(i) 按 CTRL (音量-) + C 以中止"
     Switch ON
 
     while :; do
@@ -569,7 +569,7 @@ case $1 in
     # exit if daemon is already running or override 'stoped' state
     if [ "$2" != "dpath" ]; then
       if $(auto_run) && [ -f $modData/.daemon ]; then
-        echo -e "(i) ${modID} daemon is already running.\n"
+        echo -e "(i) ${modID} 守护程序已在运行中.\n"
         exit 0
       fi
       set_prop autoRun true
@@ -739,7 +739,7 @@ EOD
   # or apply default charging limits (higherLimit=90 lowerLimit=80)
   "")
     if $(auto_run) && ! $(pause_daemon) && [ -f $modData/.daemon ]; then
-      echo -e "(i) ${modID} 守护进程已经在运行.\n"
+      echo -e "(i) ${modID} 守护进程已经在运行中.\n"
       exit 0
     fi
 
