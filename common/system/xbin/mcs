@@ -71,7 +71,7 @@ debug() {
   exec >$logsDir/${modID}_debug_log-${device}-${modVersion}-$(date +%Y%m%d%H%M%S).txt
   echo -e "$(date)\n${modID}Version=$modVersion\n\n\n"
 
-  echo -e "### PROPS(道具) ###\n"
+  echo -e "### 属性 ###\n"
   getprop | grep -Ei 'product|version'
   echo -e "\n\n"
 
@@ -80,7 +80,7 @@ debug() {
   cat $modData/sys_cache
   echo -e "\n"
 
-  echo -e "### POWER UEVENT ###\n"
+  echo -e "### 电源事件 ###\n"
   generate_sys_cache null_value
   for ueventFile in $(grep -i 'battery/uevent' $modData/sys_cache); do
     chmod +r "$ueventFile"
@@ -117,15 +117,15 @@ c_loop() {
   while :; do
     until [ "$(batt_level)" -ge "$1" ]; do
       clear
-      echo "Charging until $1%..."
+      echo "充电到 $1% 时停止..."
       echo "当前电池电量: $(batt_level)%"
       echo -e "$startTime\n"
-      echo "(i) 按 CTRL (Vol. Down) + C 以中止."
+      echo "(i) 按 CTRL (Vol. Down) + C 以中止"
       sleep 12
     done
 
     Switch OFF
-    echo -e "\n(i) 已达到期望的 % ."
+    echo -e "\n(i) 已达到设定的 % "
     end_time
 
     # Reset battery stats
@@ -133,7 +133,7 @@ c_loop() {
 
     echo -e "- 充电暂停.\n"
     echo "(i) 等待达到 $(lower_limit)% 后重启循环..."
-    echo "- 按 CTRL (Vol. Down) + C 以中止."
+    echo "- 按 CTRL (Vol. Down) + C 以中止"
 
     until [ "$(batt_level)" -le "$(lower_limit)" ]; do
       sleep 12
@@ -264,9 +264,9 @@ OFF_time() {
     if echo "$1" | grep -q '[a-z]'; then
 
       if $invertOff; then
-        echo "(i) Charging enabled for $1."
+        echo "(i) 电量为 $1 的时继续充电"
       else
-        echo "(i) Charging disabled for $1."
+        echo "(i) 电量为 $1 的时停止充电"
       fi
       start_time
 
@@ -280,14 +280,14 @@ OFF_time() {
       && echo "$1" | grep -q '[0-9]'; then
 
       if $invertOff; then
-        echo "(i) Charging enabled for $1s."
+        echo "(i) 电量为 $1s 的时继续充电"
       else
-        echo "(i) Charging disabled for $1s."
+        echo "(i) 电量为 $1s 的时停止充电"
       fi
       start_time
       sleep $1
     fi
-    echo -e "\n(i) 时间到了."
+    echo -e "\n(i) 超时"
 
     if $invertOff; then
       Switch OFF
@@ -312,10 +312,10 @@ OFF_time() {
 OFF_percent() {
   if $invertOff; then
     Switch ON
-    echo "(i) Charging enabled until $1."
+    echo "(i) 当电量低于 $1 时允许充电"
   else
     Switch OFF
-    echo "(i) Charging disabled until $1."
+    echo "(i) 当电量高于 $1 时禁止充电"
   fi
   start_time
 
@@ -323,7 +323,7 @@ OFF_percent() {
   until [ "$(batt_level)" -ge "$(echo $1 | sed 's/%//')" ]; do
     sleep 12
   done
-  echo "(i) 达到期望的 % ."
+  echo "(i) 达到设定的 % "
 
   if $invertOff; then
     Switch OFF
@@ -480,21 +480,21 @@ case $1 in
       set_prop autoRun false
       set_prop pauseDaemon false
       rm $modData/.daemon 2>/dev/null
-      echo "(i) ${modID} 守护程序已停止."
+      echo "(i) ${modID} 守护程序已停止"
     elif [ "$2" = "start" ]; then
       set_prop autoRun true
       set_prop pauseDaemon false
       (${modID} daemon) &
-      echo "(i) ${modID} 守护程序启动."
-      echo "- You may close this window."
+      echo "(i) ${modID} 守护程序启动"
+      echo "- 您可以关闭此窗口"
     else
       if $(pause_daemon); then
         set_prop pauseDaemon false
         Switch ON
-        echo "(i) ${modID} 守护程序已恢复."
+        echo "(i) ${modID} 守护程序已恢复"
       else
         set_prop pauseDaemon true
-        echo "(i) ${modID} 守护程序已暂停."
+        echo "(i) ${modID} 守护程序已暂停"
       fi
     fi
     echo
@@ -506,10 +506,10 @@ case $1 in
     -v)
     if $(get_prop loopVerbose); then
       set_prop loopVerbose false
-      echo -e "(i) Loop verbose 禁用"
+      echo -e "(i) 循环详细 禁用"
     else
       set_prop loopVerbose true
-      echo -e "(i) Loop verbose 启用"
+      echo -e "(i) 循环详细 启用"
     fi
     echo
     ;;
@@ -521,7 +521,7 @@ case $1 in
     $(get_prop loopVerbose) || set +x
     if $(auto_run) && ! $(pause_daemon) && [ -f $modData/.daemon ]; then
       set_prop pauseDaemon true
-      echo "(i) ${modID} 守护进程已暂停."
+      echo "(i) ${modID} 守护进程已暂停"
       echo -e "- 重启或运行代码 \"${modID} -s\" 以恢复.\n"
     fi
 
@@ -584,7 +584,7 @@ case $1 in
       exit 0
     fi
 
-    echo "(i) ${modID} 守护程序启动."
+    echo "(i) ${modID} 守护程序启动"
     echo -e "- 您可以关闭此窗口.\n"
     $(get_prop loopVerbose) || set +x
 
@@ -724,12 +724,12 @@ EOD
 
   # info
   -i)
-    echo -e "POWER SUPPLY INFO\n"
+    echo -e "供电信息\n"
     sed 's/^/ /' "$(uevent)"
     echo -e '\n\n'
     sed 's/^# //;/^[a-z]/s/^/  /;s/^</ </' $config
     echo -e '\n\n'
-    echo "DEBUGGING INFO\n"
+    echo "调试信息\n"
     set | sed 's/^/ /'
     echo
     ;;
@@ -787,7 +787,7 @@ EOD
     sleep 1
 
     if $(auto_run) && ! $(pause_daemon) && [ -f $modData/.daemon ]; then
-      echo "- ${modID} 守护进程已经在运行."
+      echo "- ${modID} 守护进程已经在运行"
       echo -e "-- 以新的设置工作中\n"
       Switch ON
       exit 0
