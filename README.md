@@ -1,4 +1,4 @@
-# Magic Charging Switch (mcs)
+# Magic Charging Switch (mcs充电控制)
 ## Copyright (C) 2017-2018, VR25 @ xda-developers
 ### License: GPL v3+
 
@@ -92,9 +92,9 @@ mcs -e 50% && mcs -d 5h && mcs -e 80% && mcs -d 30m && mcs -e 90%
 
 #### 调试
 
-- logsDir=/data/media/mcs/logs
-- If charging control is inconsistent or doesn't work with the current control file, run `mcs -x` to pick a different one from the database.
-- Daemon can also be stoped by removing the file `/data/media/mcs/.daemon`.
+- logs目录 `/data/media/mcs/logs`
+- 如果充电控制不一致或与当前控制文件不兼容, 运行 `mcs -x` 以从数据库中选择一个不同的开关
+- 守护进程也可以通过删除文件来停止。位置在 `/data/media/mcs/.daemon`
 
 
 
@@ -110,22 +110,22 @@ mcs -e 50% && mcs -d 5h && mcs -e 80% && mcs -d 30m && mcs -e 90%
 
 
 **2018.8.8 (201808080)**
-- General optimizations
-- Improved daemon state management
-- Updated debugging tools
-- Updated documentation
+- 一般优化
+- 改进了守护程序状态管理
+- 更新了调试工具
+- 更新文档
 
 
 **2018.8.6 (201808060)**
-- General optimizations
-- Minor cosmetic changes
+- 一般优化
+- 轻微的界面变化
 
-  *Release Note*
-- Settings will be reverted to defaults.
+  *发行公告*
+- 设置将恢复为默认值
 
 
 **2018.8.1 (201808010)**
-- General optimizations
-- Improved debug()
-- Striped down (removed unnecessary code & files)
-- Updated documentation
+- 一般优化
+- 改进的调试
+- 向下删除（删除不必要的代码和文件）
+- 更新文档
