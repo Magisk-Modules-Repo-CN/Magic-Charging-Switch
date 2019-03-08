@@ -2,35 +2,35 @@
 # /data/media/0/acc/config.txt
 
 
-capacity=5,60,70-80 # <shutdown,coolDown,resume-pause> -- ideally, <resume> shouldn't be more than 10 units below <pause>. <shutdown> and <coolDown> can be null/disabled (i.e., capacity=,,70-80).
+capacity=5,60,70-80 # <shutdown,coolDown,resume-pause> -- ideally, <resume> shouldn't be more than 10 units below <pause>. To disable <shutdown>, and <coolDown>, set these to 0 and 101, respectively (e.g., capacity=0,101,70-80). Note that the latter doesn't disable the cooling feature entirely, since it works not only based on battery capacity, but temperature as well.
+#理想情况下，<resume>不应超过<pause>以下10个单位。要禁用<shutdown>和<coolDown>，请将它们分别设置为0和101（例如，capacity = 0,101,70-80）。请注意，后者并未完全禁用冷却功能，因为它不仅基于电池容量，还基于温度。
 
-coolDown=50/10 # Charge/pause ratio (in seconds) -- reduces battery temperature and voltage induced stress. This can be disabled with a null value or a preceding hashtag.
+coolDown=50/10 # Charge/pause ratio (in seconds) -- reduces battery temperature and voltage induced stress by periodically pausing charging. This can be disabled with a null value or a preceding hashtag. If charging is too slow, turn this off or change the charge/pause ratio. Disabling this nullifies <coolDown capacity> and <lower temperature> values -- leaving only a temperature limit with a cooling timeout.
+#充电/暂停比（以秒为单位） - 通过定期暂停充电来降低电池温度和电压引起的压力。可以使用空值或前面的主题标签禁用此功能。如果充电速度太慢，请将其关闭或更改充电/暂停比率。禁用此功能会使<coolDown capacity>和<lower temperature>值无效 - 仅保留冷却超时的温度限制。
 
-temp=400-450_90 # coolDown-pauseCharging_wait -- <wait> is interpreted in seconds and it allows battery temperature to drop below <pauseCharging>. By default, temperature values are interpreted in <degrees Celsius times 10>. If <coolDown> is null (i.e., temp=-450_90), the cooling engine works with coolDown capacity only.
+temp=400-450_90 # <coolDown-pauseCharging_wait> -- <wait> is interpreted in seconds and it allows battery temperature to drop below <pauseCharging>. By default, temperature values are interpreted in <degrees Celsius times 10>. To disable temperature control entirely, set absurdly high values (e.g., temp=900-950_90).
+#<coolDown-pauseCharging_wait>  -  <wait>以秒为单位进行解释，它允许电池温度低于<pauseCharging>。默认情况下，温度值以<摄氏度乘以10>来解释。要完全禁用温度控制，请设置荒谬的高值（例如，temp = 900-950_90）。
 
-verbose=false # Alpha and Beta versions will generate verbose, whether or not this is enabled.
+verbose=false # Alpha and Beta versions will generate verbose whether or not this is enabled.
+#Alpha和Beta版本将生成详细信息，无论是否启用此功能。
 
 resetUnplugged=false # Reset battery stats every time charger is unplugged, as opposed to only when max battery capacity is reached.
+#每次拔下充电器时重置电池状态，而不是仅在达到最大电池容量时重置。
 
 loopDelay=10 # Time interval between loops, in seconds -- do not change this unless you know exactly what you're doing!
+#循环之间的时间间隔（以秒为单位） - 除非您确切知道自己在做什么，否则不要更改此值！
 
 maxLogSize=10 # Log size limit in Megabytes -- when exceeded, $log becomes $log.old. This prevents storage space hijacking.
+#日志大小限制（以兆字节为单位） - 超过时，$log 变为 $log.old。这可以防止存储空间被劫持。
 
-switch= # Charging switch parameters (<path> <onValue> <offValue>), example: switch=/sys/class/power_supply/battery/charging_enabled 1 0, pro tip: <./> can be used in place of </sys/class/power_supply/> (i.e., switch=./battery/charging_enabled 1 0). NOTE: if acc's database contains a working charging switch for your device, it is set automatically when charger is connected for the first time after installing and rebooting.
+#switch= # Custom charging switch parameters (<path> <onValue> <offValue>), e.g., switch=/sys/class/power_supply/battery/charging_enabled 1 0, pro tip: <./> can be used in place of </sys/class/power_supply/> (e.g., switch=./battery/charging_enabled 1 0).
+#自定义充电开关参数（<path> <onValue> <offValue>），例如，开关= / sys / class / power_supply / battery / charging_enabled 1 0，专业提示：<./>可用于代替</ sys / class / power_supply />（例如，switch =./ battery / charging_enabled 1 0)
 
-alwaysOverwrite=false # Overwrite switch file regardless of its value. Only enable this if you're experiencing inconsistent charging control.
+#onBoot=./usb/device/razer_charge_limit_enable:1 ./usb/device/razer_charge_limit_max:80 ./usb/device/razer_charge_limit_dropdown:70 # These settings are applied on boot.
+#这些设置在引导时应用。
 
-misc=./usb/device/razer_charge_limit_enable:1 ./usb/device/razer_charge_limit_max:80 ./usb/device/razer_charge_limit_dropdown:70 # This can even be used for setting ./battery/voltage_max (max battery voltage), CPU Governor, CPU scaling frequencies and pretty much anything else tweakable through the /sys interface. Note that the default working path is </sys/class/power_supply/> -- hence, <./> is also valid. These settings are applied on boot, after main() and before other function are called.
+onBootExit=false # Exit after applying "onBoot" settings from above. Enabling this is particularly useful if voltage_max or similar is being set -- since keeping accd running in such cases is pointless.
+#从上面应用“onBoot”设置后退出。如果设置了voltage_max或类似功能，则启用此功能特别有用 - 因为在这种情况下保持accd运行是没有意义的。
 
-exitMisc=false # Exit after applying misc settings from above. Enabling this is particularly useful if voltage_max or similar is being set -- since keeping accd running in such cases is pointless.
-
-
-# EDITING ON TERMINAL
-#
-#  acc -c/--config <editor [opts]>   Edit config w/ <editor [opts]> (default: vim/vi)
-#
-#  acc -s/--set <var> <value>   Set config parameters
-#
-#  acc -s/--set <resume-stop preset>   Can be 4041/endurance+, 5960/endurance, 7080/default, 8090/lite 9095/travel
-#               <s/switch>             Pick a charging switch from a list
-#               <no args>              Show current config
+#onPlugged=./wireless/current_max:2000000 ./usb/current_max:2000000 # These settings are applied every time an external power supply is connected.
+#每次连接外部电源时都会应用这些设置。

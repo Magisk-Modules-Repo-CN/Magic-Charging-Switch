@@ -1,7 +1,7 @@
 id=acc
-name=Advanced Charging Controller (acc)
-version=2018.12.10
-versionCode=201812100
+name=高级充电控制器 (acc)
+version=2019.1.24
+versionCode=201901240
 author=VR25 @ xda-developers
-description=This is primarily intended for extending battery lifespan (or service life). On the flip side, it is a general purpose /sys interface manipulation utility (i.e., for setting CPU Governor, scaling frequencies and pretty much anything else). It works with any root solution. Magisk 17.0+ is preferred. Versions below that are not supported. Refer to README.md for details.
+description=主要用于延长电池使用寿命。另一方面，名称说明了一切。它适用于任何根解决方案。Magisk 17.0+是首选，低于该版本将不受支持。有关详细信息，请参阅README.md
 minMagisk=17000

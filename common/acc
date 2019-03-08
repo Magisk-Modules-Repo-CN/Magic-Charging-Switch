@@ -1,21 +1,21 @@
 #!/system/bin/sh
-# Advanced Charging Controller Utilities
-# Copyright (C) 2018, VR25 @ xda-developers
+# Advanced Charging Controller
+# Copyright (C) 2017-2019, VR25 @ xda-developers
 # License: GPL V3+
 
 
 main() {
 
-  umask 000
+  umask 0
   set -euo pipefail
 
   lockFile=/dev/acc/running
   modPath=/system/etc/acc
   config=/data/media/0/acc/config.txt
 
-  if [ ! -e $modPath/module.prop ]; then
+  if [ ! -f $modPath/module.prop ]; then
     modPath=/sbin/.magisk/img/acc
-    if [ -e $modPath/module.prop ]; then
+    if [ -f $modPath/module.prop ]; then
       PATH=/sbin/.magisk/busybox:$PATH
     else
       modPath=/sbin/.core/img/acc
@@ -23,22 +23,19 @@ main() {
     fi
   fi
 
-  exxit() {
-    local exitCode=$?
-    echo
-    exit $exitCode
-  }
+  batt=$(echo /sys/class/power_supply/*attery/capacity | awk '{print $1}' | sed 's|/capacity||')
+
   trap exxit EXIT
 
   # root check
   echo
-  if ! whoami | grep -q root; then
-    echo "(!) Must run as root (su)"
+  if ! ls /data/data 1>/dev/null 2>&1; then
+    echo "(!) 必须以root身份运行 (su)"
     exit 1
   fi
 
   if [ ! -e $modPath ]; then
-    echo "(!) modPath not found"
+    echo "(!) 未找到 mod 路径"
     exit 1
   fi
 
@@ -47,14 +44,19 @@ main() {
 
   set +u
   case $1 in
+    [0-9]*) set_cap $@;;
     -c|--config) shift; edit $config $@;;
     -d|--disable) shift; disable_charging $@;;
     -D|--daemon) shift; daemon $@;;
     -e|--enable) shift; enable_charging $@;;
-    -i|--info) sed s/POWER_SUPPLY_// ./battery/uevent;;
+    -i|--info) sed s/POWER_SUPPLY_// $batt/uevent;;
     -l|--log) shift; edit ${config%/*}/logs/acc-daemon*.log $@;;
     -r|--readme) shift; edit ${config%/*}/info/README.md $@;;
-    -s|--set) shift; set_values "$@";;
+    -R|--resetstats)
+      dumpsys batterystats --reset 1>/dev/null 2>&1 || :
+      rm /data/system/batterystats* 2>/dev/null || :
+    ;;
+    -s|--set) shift; set_values $@;;
     *) help;;
   esac
   set -u
@@ -65,9 +67,9 @@ daemon() {
   case $1 in
     start)
       if [ -f $lockFile ] && ps | grep -q $(sed -n 1p $lockFile); then
-        echo "(i) accd is already running"
+        echo "(i) accd 运行中"
       else
-        echo "(i) accd started"
+        echo "(i) accd 启动"
         accd
       fi
     ;;
@@ -75,26 +77,25 @@ daemon() {
       if [ -f $lockFile ] && ps | grep -q $(sed -n 1p $lockFile); then
         kill $(cat $lockFile) 2>/dev/null || :
         rm $lockFile
-        echo "(i) accd stopped"
+        enable_charging
+        echo "(i) accd 停止"
       else
-        echo "(i) accd is not running"
+        echo "(i) accd 未运行"
       fi
     ;;
     restart)
       if [ -f $lockFile ] && ps | grep -q $(sed -n 1p $lockFile); then
-        kill $(cat $lockFile) 2>/dev/null || :
-        rm $lockFile
-        echo "(i) accd restarted"
+        echo "(i) accd 重新启动"
       else
-        echo "- accd started"
+        echo "- accd 启动"
       fi
       accd
     ;;
     *)
       if [ -f $lockFile ] && ps | grep -q $(sed -n 1p $lockFile); then
-        echo "(i) accd is running"
+        echo "(i) accd 运行中"
       else
-        echo "(i) accd is not running"
+        echo "(i) accd 未运行"
       fi
     ;;
   esac
@@ -113,54 +114,81 @@ edit() {
 
 
 help() {
-  cat <<DOC
-ACC Utilities
-Copyright (C) 2018, VR25 @ xda-developers
+  cat <<HELP
+Advanced Charging Controller
+Copyright (C) 2017-2019, VR25 @ xda-developers
 License: GPL V3+
-Version: $(sed -n 's/version=//p' $modPath/module.prop)
+Version code: $(sed -n 's/versionCode=//p' $modPath/module.prop)
 
 Usage: acc <options> <args>
 
--c/--config <editor [opts]>   Edit config w/ <editor [opts]> (default: vim/vi)
+-c|--config <editor [opts]>   Edit config w/ <editor [opts]> (default: vim|vi)
+  e.g., acc -c nano -l
 
--d/--disable <#%, #s, #m or #h (optional)>   Disable charging or disable charging with <condition>
+-d|--disable <#%, #s, #m or #h (optional)>   Disable charging or disable charging with <condition>
+  e.g., acc -d 70% (do not recharge until capacity drops to 70%), acc -d 1h (do not recharge until 1 hour has passed)
 
--D/--daemon <start/stop/restart>   Manage acc daemon (accd) state
-            <no args>              Show current accd state
+-D|--daemon   Show current acc daemon (accd) state
+  i.e., acc -D
 
--e/--enable <#%, #s, #m or #h (optional)>   Enable charging or enable charging with <condition>
+-D|--daemon <start|stop|restart>   Manage accd state
+  e.g., acc -D restart
 
--i/--info   Show power supply info
+-e|--enable <#%, #s, #m or #h (optional)>   Enable charging or enable charging with <condition>
+  e.g., acc -e 30m (recharge for 30 minutes)
 
--l/--log <editor [opts]>   Open <acc-daemon-deviceName.log> w/ <editor [opts]> (default: vim/vi)
+-i|--info   Show power supply info
+  i.e., acc --info
 
--r/--readme   Open <README.md> w/ <editor [opts]> (default: vim/vi)
+-l|--log <editor [opts]>   Open <acc-daemon-deviceName.log> w/ <editor [opts]> (default: vim|vi)
+  e.g., acc -l grep ': ' (show errors only), acc -l cat >/sdcard/acc.log (yes, this also works)
 
--s/--set <var> <value>   Set config parameters
+-r|--readme   Open <README.md> w/ <editor [opts]> (default: vim|vi)
+  i.e., acc -r
 
--s/--set <resume-stop preset>   Can be 4041/endurance+, 5960/endurance, 7080/default, 8090/lite 9095/travel
-         <s/switch>             Set a different charging switch
-         <no args>              Show current config
-DOC
+ -R|--resetstats   Reset battery stats
+
+-s|--set   Show current config
+  i.e., acc --set
+
+-s|--set <var> <value>   Set config parameters
+  e.g., acc -s verbose true (enable verbose), acc -s capacity 5,60,80-85 (5: shutdown (default), 60: cool down (default), 80: resume, 85: pause)
+
+-s|--set <resume-stop preset>   Can be 4041|endurance+, 5960|endurance, 7080|default, 8090|lite 9095|travel
+  e.g., acc -s endurance+ (a.k.a, "the li-ion sweet spot"; best for GPS navigation and other long operations), acc -s travel (for when you need extra juice), acc -s 7080 (restore default capacity settings (5,60,70-80))
+
+-s|--set <s|switch>   Set a different charging switch from the database
+  i.e., acc -s s
+
+Tips
+
+  Pause and resume capacities can also be set with acc <pause%> <resume%>.
+    e.g., acc 85 80
+
+  Commands can be chained for extended functionality.
+    e.g., acc -e 30m && acc -d 6h && acc -e 85 && accd (recharge for 30 minutes, halt charging for 6 hours, recharge to 85% capacity and restart daemon)
+
+Run acc -r to see the full documentation (type ":q! <enter>" to quit).
+HELP
 }
 
 
 set_value() {
-  if grep -Eq "^$1=|^#$1=" $config; then
-    if grep -q "^$1=" $config; then
-      sed -i "s|^$1=[^#]*|$1=$2 |" $config
-    else
-      sed -i "s|^#$1=[^#]*|$1=$2 |" $config
-    fi
+  local var=$1
+  [ $var = s ] && var=switch || :
+  shift
+  if grep -q "^$var=" $config; then
+    sed -i "s|^$var=[^#]*|$var=$(echo -n $@) |" $config
+  elif grep -q "^#$var=" $config; then
+    sed -i "s|^#$var=[^#]*|$var=$(echo -n $@) |" $config
   else
-    echo -e "(!) Invalid argument(s)\n"
+    echo "(!) 变量无效"
     exit 1
   fi
 }
 
 
 set_values() {
-  [ -n "$3" ] && { echo -e "(!) acc -s: max 2 arguments\n"; exit 1; }
   case $1 in
     8090|lite) set_value capacity 5,60,80-90;;
     9095|travel) set_value capacity 5,60,90-95;;
@@ -171,7 +199,7 @@ set_values() {
          if [ -z "$2" ] && [ $1 = switch -o $1 = s ]; then
            set_switch
          else
-           set_value $1 "$2"
+           set_value $@
          fi
        else
          grep '^[a-z].*=' $config | sed 's/#.*//'
@@ -182,21 +210,21 @@ set_values() {
 
 set_switch() {
   local s="" on="" off="" l="" i="" oIFS=$IFS
-  echo -e "(i) Available charging switches\n- Choose one and press Enter to set it\n"
+  echo -e "(i) 可用的充电开关\n- 选择一个, 然后按 <Enter> 设置它\n"
 
   while read s; do
-    [ -e $(echo $s | awk '{print $1}') ] && l="$l
+    [ -f $(echo $s | awk '{print $1}') ] && l="$l
 $s"
   done <<SWITCHES
-$(grep -v '#' $modPath/switches.txt)
+$(grep -Ev '#|^$' $modPath/switches.txt)
 SWITCHES
 
   local IFS=$'\n'
-  select i in $l; do
+  eval 'select i in $l; do
     IFS=$oIFS
     set_value switch "$i"
     break
-  done
+  done'
 }
 
 
@@ -206,26 +234,25 @@ disable_charging() {
   if get_value switch | grep -q /; then
     s=$(get_value switch | awk '{print $1}')
     off=$(get_value switch | awk '{print $3}')
-    if [ -e $s ]; then
+    if [ -f $s ]; then
       chmod +w $s && echo $off >$s || :
     else
-      echo -e "(!) Invalid charging switch\n"
+      echo -e "(!) 无效的充电开关\n"
       exit 1
     fi
   else
-    echo -e "(!) Charging switch not set\n"
-    exit 1
+    switch_loop off
   fi
   set +u
   if [ -n "$1" ]; then
     if echo "$1" | grep -q %; then
-      echo -e "(i) Charging disabled until battery capacity <= $1\n"
-      until [ $(cat ./battery/capacity) -le $(echo $1 | sed 's/%//') ]; do
+      echo -e "(i) 当电量 <= $1 时禁用充电\n"
+      until [ $(cat $batt/capacity) -le $(echo $1 | sed 's/%//') ]; do
         sleep $(get_value loopDelay)
       done
       enable_charging
     elif echo "$1" | grep -Eq 's|m|h'; then
-      echo -e "(i) Charging disabled for $1\n"
+      echo -e "(i) 将在 $1 后禁用充电\n"
       if echo "$1" | grep -q s; then
         sleep $(echo $1 | sed 's/\s//')
       elif echo "$1" | grep -q m; then
@@ -235,10 +262,10 @@ disable_charging() {
       fi
       enable_charging
     else
-      echo "(i) Charging disabled"
+      echo "(i) 充电禁用"
     fi
   else
-    echo "(i) Charging disabled"
+    echo "(i) 充电禁用"
   fi
 }
 
@@ -249,26 +276,30 @@ enable_charging() {
   if get_value switch | grep -q /; then
     s=$(get_value switch | awk '{print $1}')
     on=$(get_value switch | awk '{print $2}')
-    if [ -e $s ]; then
+    if [ -f $s ]; then
       chmod +w $s && echo $on >$s || :
+      for l in $(get_value onPlugged); do
+        t=$(echo $l | cut -d: -f1)
+        v=$(echo $l | cut -d: -f2)
+        [ -f $t ] && chmod +w $t && echo $v >$t || :
+      done
     else
-      echo -e "(!) Invalid charging switch\n"
+      echo -e "(!) 无效的充电开关\n"
       exit 1
     fi
   else
-    echo -e "(!) Charging switch not set\n"
-    exit 1
+    switch_loop on
   fi
   set +u
   if [ -n "$1" ]; then
     if echo "$1" | grep -q %; then
-      echo -e "(i) Charging enabled until battery capacity >= $1\n"
-      until [ $(cat ./battery/capacity) -ge $(echo $1 | sed 's/%//') ]; do
+      echo -e "(i) 当电量 >= $1 时启用充电\n"
+      until [ $(cat $batt/capacity) -ge $(echo $1 | sed 's/%//') ]; do
         sleep $(get_value loopDelay)
       done
       disable_charging
     elif echo "$1" | grep -Eq 's|m|h'; then
-      echo -e "(i) Charging enabled for $1\n"
+      echo -e "(i) 将在 $1 后启用充电\n"
       if echo "$1" | grep -q s; then
         sleep $(echo $1 | sed 's/\s//')
       elif echo "$1" | grep -q m; then
@@ -278,10 +309,10 @@ enable_charging() {
       fi
       disable_charging
     else
-      echo "(i) Charging enabled"
+      echo "(i) 充电启用"
     fi
   else
-    echo "(i) Charging enabled"
+    echo "(i) 充电启用"
   fi
 }
 
@@ -289,5 +320,41 @@ enable_charging() {
 get_value() { sed -n "s:^$1=::p" $config | sed 's/#.*//'; }
 
 
+exxit() {
+  local exitCode=$?
+  echo
+  exit $exitCode
+}
+
+
+set_cap() {
+  local s=$(get_value capacity | cut -d, -f1)
+  local c=$(get_value capacity | cut -d, -f2)
+  set_value capacity $s,$c,$2-$1
+}
+
+
+switch_loop() {
+  local s="" on="" off="" default=""
+  while read s; do
+    if [ -f $(echo $s | awk '{print $1}') ]; then
+      on=$(echo $s | awk '{print $2}')
+      off=$(echo $s | awk '{print $3}')
+      s=$(echo $s | awk '{print $1}')
+      default=$(sed -n 1p $s)
+      chmod +w $s && eval "echo \$$1" >$s && sleep 1 || :
+      if { [ $1 = off ] && ! grep -Eiq 'dis|not' $batt/status; } \
+        || { [ $1 = on ] && grep -Eiq 'dis|not' $batt/status; }
+      then
+        echo $default >$s && sleep 1 || :
+      else
+        break
+      fi
+    fi
+  done <<SWITCHES
+$(grep -Ev '#|^$' $modPath/switches.txt)
+SWITCHES
+}
+
+
 main $@
- 

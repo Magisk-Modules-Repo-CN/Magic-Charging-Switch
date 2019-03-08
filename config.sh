@@ -110,7 +110,7 @@ install_module() {
   set -euxo pipefail
   trap debug_exit EXIT
 
-  local config=/data/media/0/$MODID/config.txt
+  config=/data/media/0/$MODID/config.txt
 
   # magisk.img mount path
   if $BOOTMODE; then
@@ -118,7 +118,7 @@ install_module() {
     [ -e $MOUNTPATH0 ] || MOUNTPATH0=/sbin/.core/img
     if [ ! -e $MOUNTPATH0 ]; then
       ui_print " "
-      ui_print "(!) \$MOUNTPATH0 not found"
+      ui_print "(!) \$MOUNTPATH0 未找到"
       ui_print " "
       exit 1
     fi
@@ -132,7 +132,7 @@ install_module() {
   if [ $curVer -eq $(i versionCode) ] && ! $BOOTMODE; then
     touch $MODPATH/disable
     ui_print " "
-    ui_print "(i) Module disabled"
+    ui_print "(i) 模块已禁用"
     ui_print " "
     set +euo pipefail
     unmount_magisk_img
@@ -143,14 +143,12 @@ install_module() {
   fi
 
   # cleanup & create module paths
+  cleanup
   rm -rf $MODPATH 2>/dev/null || :
-  if [ $curVer -lt 201812100 ] || [ $curVer -gt $(i versionCode) ]; then
-    rm -rf /data/media/0/$MODID 2>/dev/null || :
-  fi
   mkdir -p ${config%/*}/info ${config%/*}/logs
   [ -d /system/xbin ] && mkdir -p $MODPATH/system/xbin \
     || mkdir -p $MODPATH/system/bin
-    
+
   # remove legacy (mcs)
   rm -rf /data/media/mcs 2>/dev/null || :
   touch $MOUNTPATH0/mcs/remove 2>/dev/null || :
@@ -161,6 +159,7 @@ install_module() {
   unzip -o "$ZIP" -x common/addon.d.sh -d ./ >&2
   mv common/$MODID $MODPATH/system/*bin/
   mv common/* $MODPATH/
+  rm $MODPATH/addon.d.sh
   cp -f $MODPATH/service.sh $(echo -n $MODPATH/system/*bin)/accd
   $LATESTARTSERVICE && LATESTARTSERVICE=false \
     || rm $MODPATH/service.sh
@@ -168,7 +167,8 @@ install_module() {
   [ -f $config ] || cp $MODPATH/default_config.txt $config
 
   set +euxo pipefail
-  debug
+  ui_print "- [Background] Generating ${config%/*}/logs/acc-power_supply-$(getprop ro.product.device | grep .. || getprop ro.build.product).log"
+  (debug &) &
 }
 
 
@@ -180,7 +180,7 @@ install_system() {
 
   local modId=acc
   local modPath=/system/etc/$modId
-  local config=/data/media/0/$modId/config.txt
+  config=/data/media/0/$modId/config.txt
 
   grep_prop() {
     local REGEX="s/^$1=//p"
@@ -217,7 +217,7 @@ install_system() {
 
   # uninstall
   if [ $curVer -eq $(i versionCode) ]; then
-    ui_print "(i) Uninstalling"
+    ui_print "(i) 卸载中"
     rm -rf /system/etc/init.d/$modId* \
            /system/etc/$modId \
            /system/addon.d/$modId* \
@@ -226,10 +226,8 @@ install_system() {
   else
 
     # cleanup & create paths
+    cleanup
     mkdir -p $modPath
-    if [ $curVer -lt 201812100 ] || [ $curVer -gt $(i versionCode) ]; then
-      rm -rf /data/media/0/$modId 2>/dev/null || :
-    fi
     mkdir -p ${config%/*}/info ${config%/*}/logs
 
     # remove legacy (mcs)
@@ -240,7 +238,7 @@ install_system() {
            /data/media/mcs 2>/dev/null || :
 
     # install
-    ui_print "- Installing"
+    ui_print "- 安装中"
     cd $INSTALLER
     unzip -o "$ZIP" -d ./ >&2
     mv -f common/service.sh $modPath/autorun.sh
@@ -258,13 +256,14 @@ install_system() {
       mv -f common/addon.d.sh /system/addon.d/$modId.sh
       set_perm /system/addon.d/$modId.sh
     fi
-    mv -f common/* module.prop $modPath/  
+    mv -f common/* module.prop $modPath/
     set_perm $modPath/accd
     mv -f License* README* ${config%/*}/info/
     [ -f $config ] || cp $modPath/default_config.txt $config
 
     set +euxo pipefail
-    debug
+    ui_print "- [Background] Generating ${config%/*}/logs/acc-power_supply-$(getprop ro.product.device | grep .. || getprop ro.build.product).log"
+    (debug &) &
     MAGISK_VER=0
     version_info
   fi
@@ -273,24 +272,22 @@ install_system() {
 
 
 debug() {
-  local d="" f=""
+  local target=""
   date
-  echo versionCode=$(i versionCode)
-  echo; echo; echo
-  for d in /sys/class/power_supply/*; do
-    for f in $d/*; do
-      if [ -f $f ]; then
-        echo $f
-        cat $f | sed 's/^/  /'
-        echo
-      fi
-    done
-    echo; echo
+  echo "Version code: $(i versionCode)"
+  echo; echo
+  for target in $(find /sys /proc 2>/dev/null | grep -Ei 'batt|ch.*rg|power_supply'); do
+    if [ -f $target ]; then
+      echo $target
+      sed 's/^/  /' $target 2>/dev/null
+      echo
+    fi
   done 2>/dev/null
+  echo
   getprop | grep product
-  echo; echo; echo
+  echo
   getprop | grep version
-} >${config%/*}/logs/acc-debug-$(getprop ro.product.device | grep . || getprop ro.build.product).log
+} >${config%/*}/logs/acc-power_supply-$(getprop ro.product.device | grep . || getprop ro.build.product).log
 
 
 debug_exit() {
@@ -320,30 +317,34 @@ i() {
 }
 
 
+cleanup() {
+  if [ $curVer -lt 201901090 ] || [ $curVer -gt $(i versionCode) ]; then
+    rm -rf /data/media/0/acc 2>/dev/null || :
+  fi
+}
+
+
 version_info() {
+  local line=""
+  local println=false
 
-  local c="" whatsNew="- Almost everything
-- Refer to README.md for details"
-
-  set -euo pipefail
+  # a note on untested Magisk versions
+  if [ ${MAGISK_VER/.} -gt 180 ]; then
+    ui_print " "
+    ui_print "  (!) 这个Magisk版本尚未经过@VR25测试 "
+    ui_print "    - 如果您遇到任何问题，请报告。"
+  fi
 
   ui_print " "
   ui_print "  WHAT'S NEW"
-  echo "$whatsNew" | \
-    while read c; do
-      ui_print "    $c"
-    done
+  cat ${config%/*}/info/README.md | while read line; do
+    echo "$line" | grep -q '\*\*.*\(.*\)\*\*' && println=true
+    $println && echo "$line" | grep -q '^$' && break
+    $println && echo "    $line" | grep -v '\*\*.*\(.*\)\*\*'
+  done
   ui_print " "
 
-  # a note on untested Magisk versions
-  if [ ${MAGISK_VER/.} -gt 173 ]; then
-    ui_print " "
-    ui_print "(i) This Magisk version hasn't been tested by @VR25!"
-    ui_print "- If you come across any issue, please report."
-    ui_print " "
-  fi
-
-  ui_print "  SUPPORT"
+  ui_print "  LINKS"
   ui_print "    - Battery University: batteryuniversity.com/learn/article/how_to_prolong_lithium_based_batteries/"
   ui_print "    - Facebook page: facebook.com/VR25-at-xda-developers-258150974794782/"
   ui_print "    - Git repository: github.com/Magisk-Modules-Repo/acc/"
@@ -351,4 +352,10 @@ version_info() {
   ui_print "    - Telegram profile: t.me/vr25xda/"
   ui_print "    - XDA thread: forum.xda-developers.com/apps/magisk/module-magic-charging-switch-cs-v2017-9-t3668427/"
   ui_print " "
+
+  ui_print "(i) 您现在可以关闭它，但在重新启动之前，请等待至少一两分钟以完成后台作业。"
+  ui_print " "
 }
+
+
+acc --daemon stop 1>/dev/null 2>&1
